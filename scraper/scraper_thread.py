@@ -2,6 +2,7 @@ import threading
 import time
 from selenium import webdriver
 from selenium import common
+from threading import Lock
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -10,20 +11,39 @@ from selenium.webdriver.chrome.options import Options
 import time
 
 class ScraperThread (threading.Thread):
+
+    file = open('dataset/dead_url.txt', 'a')
+    threadLock = Lock()
     def __init__(self, driver_location, url):
-
-
         self.driver_loc = driver_location
         self.url = url
         threading.Thread.__init__(self)
 
+
+    def getDeadUrls (self):
+        return self.deadUrls
+
     def run(self):
 
         self.scraper = SearchScraper(self.driver_loc, self.url)
-        print(self.scraper.get_description())
+        description = self.scraper.get_description()
         print (self.scraper.get_keywords())
-        self.scraper.__del__()
+        #self.scraper.get_keywords()
+        self.scraper.driver.close()
+
+
+
+        if (description == None):
+            ScraperThread.threadLock.acquire(True)
+            self.file.write(self.url)
+            ScraperThread.threadLock.release()
+        # links = self.scraper.get_links()
+
+        #for sub_domain in links:
+       #     thread = ScraperThread(self.driver_loc, sub_domain)
+       #     thread.start()
         return
+
 
 
 class SearchScraper:
@@ -53,11 +73,11 @@ class SearchScraper:
 
         self._open_page(url)
 
-    def __del__(self):
-        self.driver.close()
+
 
     def _open_page(self, url):
-        self.driver.implicitly_wait(2)
+
+        self.driver.implicitly_wait(10)
         try:
             if url.startswith('http') or url.startswith('https'):
                 self.url = url
@@ -71,7 +91,7 @@ class SearchScraper:
                     self.__init__(self.driver, 'http://' + url)
                     self.url = 'http://' + url
         except:
-            print 'website timed out'
+            print ('website timed out')
 
     def get_keywords (self):
         page = self.driver.find_element_by_tag_name("html").text
@@ -94,11 +114,12 @@ class SearchScraper:
                 description = func(param).get_attribute('content')
             except common.exceptions.NoSuchElementException:
                 continue
-
-        if description == None:
-            description = self.url + " This page doesn't have a description"
+            except common.exceptions.StaleElementReferenceException:
+                continue
 
         return description
+
+
 
 
 

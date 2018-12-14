@@ -1,6 +1,5 @@
 import scraper
 import threading
-import thread
 import time
 
 
@@ -13,24 +12,41 @@ def load_file():
 
 if __name__ == "__main__":
 
-
     driver = 'drivers/chromedriver'
     url_list = load_file()
 
-    conc_threads = 10
+    conc_threads = 30
     scraping_threads = []
 
-    for url in url_list:
+    start_time = time.time()
+    no_of_urls = 20
+    for url in range(0, no_of_urls):
         while threading.active_count() > conc_threads:
             time.sleep(0)
-        thread = scraper.ScraperThread (driver, url)
+        thread = scraper.ScraperThread(driver, url_list[url])
         thread.start()
+
         scraping_threads.append(thread)
 
-    for thread in scraping_threads:
-        thread.join()
+    while threading.active_count() > 1:
+        for thread in threading.enumerate():
+            try:
+              thread.join()
+            except:
+                continue
 
 
+
+
+    dead_urls = set(open('dataset/dead_url.txt','r').readlines())
+
+
+
+
+
+    end_time = time.time()
+
+    print((end_time - start_time)/no_of_urls, 's per url')
 
 
 
