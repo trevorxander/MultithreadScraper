@@ -29,6 +29,7 @@ class ScraperThread (threading.Thread):
         description = self.scraper.get_description()
         print (self.scraper.get_keywords())
         #self.scraper.get_keywords()
+        print(self.scraper.get_links())
         self.scraper.driver.close()
 
 
@@ -76,7 +77,7 @@ class SearchScraper:
 
 
     def _open_page(self, url):
-
+        print(url)
         self.driver.implicitly_wait(10)
         try:
             if url.startswith('http') or url.startswith('https'):
@@ -95,13 +96,20 @@ class SearchScraper:
 
     def get_keywords (self):
         page = self.driver.find_element_by_tag_name("html").text
+        # page_content = split page by space
+        # loop through page_content to store it into a new array
+        #   if there's a space ignore
+        #   if it's a non keyword ignore
+        #   if there's a non-character ignore the word ^[a-zA-Z]+
         return page
 
     def get_links(self):
-        print('test')
+        elems = self.driver.find_elements_by_tag_name("a")
+        for elem in elems:
+            print (elem.get_attribute("href"))
 
     def get_category(self):
-        meta =  page = self.driver.find_element_by_tag_name("meta")
+        meta = page = self.driver.find_element_by_tag_name("meta")
         print(meta)
 
     def get_description (self):
