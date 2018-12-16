@@ -109,6 +109,9 @@ class SearchScraper:
         for elem in elems:
             print (elem.get_attribute("href"))
 
+    def get_title(self):
+        print('test')
+
     def get_category(self):
         meta = page = self.driver.find_element_by_tag_name("meta")
         print(meta)
