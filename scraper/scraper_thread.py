@@ -95,6 +95,7 @@ class SearchScraper:
             print ('website timed out')
 
     def get_keywords (self):
+        page: str
         page = self.driver.find_element_by_tag_name("html").text
         # page_content = split page by space
         # loop through page_content to store it into a new array
