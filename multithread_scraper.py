@@ -10,7 +10,20 @@ def load_file():
     file = open('dataset/url_list.txt','r')
     return file.readlines()
 
+def say_hello (say):
+
+    for elem in say:
+        for words in elem:
+            if type(words) == str:
+                print(words)
+
+
 if __name__ == "__main__":
+
+
+    list = {5,'string', True, 'check', 500, 'test2'}
+    say_hello(list)
+
 
     driver = 'drivers/chromedriver'
     url_list = load_file()
@@ -34,9 +47,6 @@ if __name__ == "__main__":
               thread.join()
             except:
                 continue
-
-
-
 
     dead_urls = set(open('dataset/dead_url.txt','r').readlines())
 

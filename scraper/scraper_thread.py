@@ -9,6 +9,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 import time
+from typing import NewType
 
 class ScraperThread (threading.Thread):
 
@@ -27,7 +28,7 @@ class ScraperThread (threading.Thread):
 
         self.scraper = SearchScraper(self.driver_loc, self.url)
         description = self.scraper.get_description()
-        print (self.scraper.get_keywords())
+        self.scraper.get_keywords()
         #self.scraper.get_keywords()
         print(self.scraper.get_links())
         self.scraper.driver.close()
