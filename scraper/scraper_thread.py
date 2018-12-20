@@ -8,38 +8,51 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+
+from scraper.scraper_data import PageData
+from scraper.scraper_data import PageDataCollection
 import time
 from typing import NewType
 
+
+
 class ScraperThread (threading.Thread):
+    data_collection = PageDataCollection("dataset/page_data.txt")
     threadLock = Lock()
     def __init__(self, driver_location, url):
+        threading.Thread.__init__(self)
         self.driver_loc = driver_location
         self.url = url
-        threading.Thread.__init__(self)
-
-
+        self.data = PageData()
 
     def run(self):
 
         self.scraper = SearchScraper(self.driver_loc, self.url)
-        description = self.scraper.get_description()
-        self.scraper.get_keywords()
-        #print(self.scraper.get_links())
-        #print(self.scraper.get_category())
+        self.data.add_data("url", [self.url])
+        self.data.add_data('title', [self.scraper.get_title()])
+
+        self.data.add_data('description',self.scraper.get_description())
+        self.data.add_data('words', self.scraper.get_keywords())
+
+        sub_domains = self.scraper.get_links()
+        for url in sub_domains:
+            thread = ScraperThread(self.driver_loc, url)
+        self.data.add_data('links', sub_domains)
+
+        ScraperThread.threadLock.acquire()
+        ScraperThread.data_collection.add_page(self.data)
+        ScraperThread.threadLock.release()
+
+        # print(self.scraper.get_category())
+
         self.scraper.driver.close()
 
-
-
-        if (description == None):
-            ScraperThread.threadLock.acquire(True)
-            self.file.write(self.url)
-            ScraperThread.threadLock.release()
         # links = self.scraper.get_links()
 
         # for sub_domain in links:
         #    thread = ScraperThread(self.driver_loc, sub_domain)
         #    thread.start()
+
         return
 
 
@@ -74,13 +87,11 @@ class SearchScraper:
 
 
     def _open_page(self, url):
-        print(url)
         self.driver.implicitly_wait(10)
         try:
             if url.startswith('http') or url.startswith('https'):
                 self.url = url
                 self.driver.get(url)
-
             else:
                 try:
                     self.driver.get('https://' + url)
@@ -92,29 +103,29 @@ class SearchScraper:
             print ('website timed out')
 
     def get_keywords (self):
-        page: str
         page = self.driver.find_element_by_tag_name("html").text
-        page_content = page.split()
-        print(len(page_content))
+        page = page.split()
         object = {}
-        for word in page_content:
+       # for word in page_content:
             # if there's a non-character ignore the word  (^[a-zA-Z]+)
             # STORE IT INTO AN OBJECT SO I CAN DO getUrlPriority and then we can store into database
-            print('test')
         # getUrlPriority
         return page
 
     def get_links(self):
-        elems = self.driver.find_elements_by_tag_name("a")
-        for elem in elems:
-            print (elem.get_attribute("href"))
+        links = self.driver.find_elements_by_tag_name('a')
+        link_list = []
+        for sub_domain in links:
+            link_list.append(sub_domain.get_attribute("href"))
+
+        return (link_list)
 
     def get_title(self):
         title = self.driver.title
         return title
 
     def get_category(self):
-        meta = page = self.driver.find_element_by_tag_name("meta")
+        meta = self.driver.find_element_by_tag_name("meta")
         print(meta)
 
     def get_description (self):
@@ -130,11 +141,9 @@ class SearchScraper:
             except common.exceptions.StaleElementReferenceException:
                 continue
 
-        return description
+        if description is None:
+            description = "null"
+        return [description]
 
-
-    def get_URL_priority (self, word):
-
-        print('test')
 
 

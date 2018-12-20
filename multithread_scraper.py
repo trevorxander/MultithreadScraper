@@ -7,8 +7,6 @@ import time
 
 if __name__ == "__main__":
 
-
-
     driver = 'drivers/chromedriver'
 
 
@@ -16,22 +14,18 @@ if __name__ == "__main__":
     scraping_threads = []
 
     start_time = time.time()
-    no_of_urls = 5
+    max_urls = 9999999
 
-    url_queue = UrlList("dataset/dead_url.txt")
+    url_queue = UrlList("dataset/top_websites.txt")
 
-    for url in url_queue:
-        print(url)
-
-
-    for url in range(0, no_of_urls):
-
+    for url_count,url in enumerate(url_queue):
+        if url_count > max_urls:
+            break
         while threading.active_count() > conc_threads:
             time.sleep(0)
-        #thread = scraper.ScraperThread(driver, url_queue.next_url)
-        #thread.start()
-
-        #scraping_threads.append(thread)
+        thread = scraper.ScraperThread(driver, url)
+        thread.start()
+        scraping_threads.append(thread)
 
     while threading.active_count() > 1:
         for thread in threading.enumerate():
@@ -40,15 +34,14 @@ if __name__ == "__main__":
             except:
                 continue
 
-    dead_urls = set(open('dataset/dead_url.txt','r').readlines())
-
+    scraper.ScraperThread.data_collection.flush()
 
 
 
 
     end_time = time.time()
 
-    print((end_time - start_time)/no_of_urls, 's per url')
+    print((end_time - start_time) / max_urls, 's per url')
 
 
 

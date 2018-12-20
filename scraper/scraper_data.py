@@ -71,6 +71,7 @@ class PageDataCollection:
             PageDataCollection.mutex.release()
 
     def flush(self):
+        write_count = 0
         while not self._buffer.empty():
             page_data: PageData
             page_data = self._buffer.get()
@@ -81,5 +82,6 @@ class PageDataCollection:
             for word in words:
                 self._file.write(word + ' ')
             self._file.write('\n\n')
+            print('Wrote ' + write_count + ' files')
 
 
