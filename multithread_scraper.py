@@ -1,45 +1,37 @@
 import scraper
+from scraper import UrlList
 import threading
 import time
 
 
 
-def load_file():
-
-
-    file = open('dataset/url_list.txt','r')
-    return file.readlines()
-
-def say_hello (say):
-
-    for elem in say:
-        for words in elem:
-            if type(words) == str:
-                print(words)
-
-
 if __name__ == "__main__":
 
 
-    list = {5,'string', True, 'check', 500, 'test2'}
-    say_hello(list)
-
 
     driver = 'drivers/chromedriver'
-    url_list = load_file()
+
 
     conc_threads = 30
     scraping_threads = []
 
     start_time = time.time()
-    no_of_urls = 20
+    no_of_urls = 5
+
+    url_queue = UrlList("dataset/dead_url.txt")
+
+    for url in url_queue:
+        print(url)
+
+
     for url in range(0, no_of_urls):
+
         while threading.active_count() > conc_threads:
             time.sleep(0)
-        thread = scraper.ScraperThread(driver, url_list[url])
-        thread.start()
+        #thread = scraper.ScraperThread(driver, url_queue.next_url)
+        #thread.start()
 
-        scraping_threads.append(thread)
+        #scraping_threads.append(thread)
 
     while threading.active_count() > 1:
         for thread in threading.enumerate():

@@ -12,8 +12,6 @@ import time
 from typing import NewType
 
 class ScraperThread (threading.Thread):
-
-    file = open('dataset/dead_url.txt', 'a')
     threadLock = Lock()
     def __init__(self, driver_location, url):
         self.driver_loc = driver_location
@@ -21,16 +19,14 @@ class ScraperThread (threading.Thread):
         threading.Thread.__init__(self)
 
 
-    def getDeadUrls (self):
-        return self.deadUrls
 
     def run(self):
 
         self.scraper = SearchScraper(self.driver_loc, self.url)
         description = self.scraper.get_description()
         self.scraper.get_keywords()
-        #self.scraper.get_keywords()
-        print(self.scraper.get_links())
+        #print(self.scraper.get_links())
+        #print(self.scraper.get_category())
         self.scraper.driver.close()
 
 
@@ -41,9 +37,9 @@ class ScraperThread (threading.Thread):
             ScraperThread.threadLock.release()
         # links = self.scraper.get_links()
 
-        #for sub_domain in links:
-       #     thread = ScraperThread(self.driver_loc, sub_domain)
-       #     thread.start()
+        # for sub_domain in links:
+        #    thread = ScraperThread(self.driver_loc, sub_domain)
+        #    thread.start()
         return
 
 
@@ -98,11 +94,14 @@ class SearchScraper:
     def get_keywords (self):
         page: str
         page = self.driver.find_element_by_tag_name("html").text
-        # page_content = split page by space
-        # loop through page_content to store it into a new array
-        #   if there's a space ignore
-        #   if it's a non keyword ignore
-        #   if there's a non-character ignore the word ^[a-zA-Z]+
+        page_content = page.split()
+        print(len(page_content))
+        object = {}
+        for word in page_content:
+            # if there's a non-character ignore the word  (^[a-zA-Z]+)
+            # STORE IT INTO AN OBJECT SO I CAN DO getUrlPriority and then we can store into database
+            print('test')
+        # getUrlPriority
         return page
 
     def get_links(self):
@@ -111,7 +110,8 @@ class SearchScraper:
             print (elem.get_attribute("href"))
 
     def get_title(self):
-        print('test')
+        title = self.driver.title
+        return title
 
     def get_category(self):
         meta = page = self.driver.find_element_by_tag_name("meta")
@@ -133,11 +133,8 @@ class SearchScraper:
         return description
 
 
-
-
-
-
     def get_URL_priority (self, word):
+
         print('test')
 
 
