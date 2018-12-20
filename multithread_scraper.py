@@ -3,8 +3,6 @@ from scraper import UrlList
 import threading
 import time
 
-
-
 if __name__ == "__main__":
 
     driver = 'drivers/chromedriver'
@@ -18,6 +16,7 @@ if __name__ == "__main__":
 
     url_queue = UrlList("dataset/top_websites.txt")
 
+    url_count: int
     for url_count,url in enumerate(url_queue):
         if url_count > max_urls:
             break
@@ -36,12 +35,9 @@ if __name__ == "__main__":
 
     scraper.ScraperThread.data_collection.flush()
 
-
-
-
     end_time = time.time()
 
-    print((end_time - start_time) / max_urls, 's per url')
+    print((end_time - start_time) / url_count, 's per url')
 
 
 

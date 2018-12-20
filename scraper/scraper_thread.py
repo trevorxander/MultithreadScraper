@@ -4,17 +4,10 @@ from selenium import webdriver
 from selenium import common
 from threading import Lock
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 
 from scraper.scraper_data import PageData
 from scraper.scraper_data import PageDataCollection
-import time
-from typing import NewType
-
-
 
 class ScraperThread (threading.Thread):
     data_collection = PageDataCollection("dataset/page_data.txt")
@@ -26,36 +19,31 @@ class ScraperThread (threading.Thread):
         self.data = PageData()
 
     def run(self):
+        try:
+            self.scraper = SearchScraper(self.driver_loc, self.url)
+            self.data.add_data("url", [self.url])
+            self.data.add_data('title', [self.scraper.get_title()])
 
-        self.scraper = SearchScraper(self.driver_loc, self.url)
-        self.data.add_data("url", [self.url])
-        self.data.add_data('title', [self.scraper.get_title()])
+            self.data.add_data('description',self.scraper.get_description())
+            self.data.add_data('words', self.scraper.get_keywords())
 
-        self.data.add_data('description',self.scraper.get_description())
-        self.data.add_data('words', self.scraper.get_keywords())
+            sub_domains = self.scraper.get_links()
+            for url in sub_domains:
+                thread = ScraperThread(self.driver_loc, url)
+            self.data.add_data('links', sub_domains)
 
-        sub_domains = self.scraper.get_links()
-        for url in sub_domains:
-            thread = ScraperThread(self.driver_loc, url)
-        self.data.add_data('links', sub_domains)
-
-        ScraperThread.threadLock.acquire()
-        ScraperThread.data_collection.add_page(self.data)
-        ScraperThread.threadLock.release()
-
-        # print(self.scraper.get_category())
-
-        self.scraper.driver.close()
-
-        # links = self.scraper.get_links()
-
-        # for sub_domain in links:
-        #    thread = ScraperThread(self.driver_loc, sub_domain)
-        #    thread.start()
-
-        return
+            ScraperThread.threadLock.acquire()
+            ScraperThread.data_collection.add_page(self.data)
+            ScraperThread.threadLock.release()
 
 
+        except common.exceptions.TimeoutException:
+            print('Error:'  + self.url + ' timed out')
+        except common.exceptions.StaleElementReferenceException:
+            print('Error: Could not partse HTML for ' + self.url)
+        finally:
+            self.scraper.driver.close()
+            return
 
 class SearchScraper:
     def __init__(self, driver_location, url):
@@ -88,19 +76,16 @@ class SearchScraper:
 
     def _open_page(self, url):
         self.driver.implicitly_wait(10)
-        try:
-            if url.startswith('http') or url.startswith('https'):
-                self.url = url
-                self.driver.get(url)
-            else:
-                try:
-                    self.driver.get('https://' + url)
-                    self.url = 'https://' + url
-                except:
-                    self.__init__(self.driver, 'http://' + url)
-                    self.url = 'http://' + url
-        except:
-            print ('website timed out')
+        if url.startswith('http') or url.startswith('https'):
+            self.url = url
+            self.driver.get(url)
+        else:
+            try:
+                self.driver.get('https://' + url)
+                self.url = 'https://' + url
+            except:
+                self.__init__(self.driver, 'http://' + url)
+                self.url = 'http://' + url
 
     def get_keywords (self):
         page = self.driver.find_element_by_tag_name("html").text
