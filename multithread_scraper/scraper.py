@@ -28,18 +28,19 @@ class SearchScraper:
                                                             'durable_storage': 2}}
         chrom_options.add_experimental_option("prefs", prefs)
         chrom_options.add_argument('--headless')
+        chrom_options.add_argument('--no-sandbox')
         chrom_options.Proxy = None
         capa = DesiredCapabilities.CHROME
         capa["pageLoadStrategy"] = "normal"
         self.driver = webdriver.Chrome(driver_location, desired_capabilities=capa, chrome_options=chrom_options)
         self.url = url
 
-        self.scraper_functions = [self.get_url,
+        self.scraper_functions = [self.get_title,
+                                  self.get_url,
+                                  self.get_description,
                                   self.get_keywords,
-                                  self.get_title,
-                                  self.get_category,
-                                  self.get_links,
-                                  self.get_description]
+                                  #self.get_category,
+                                  self.get_links]
 
         self._open_page()
 
@@ -57,12 +58,20 @@ class SearchScraper:
                 self.url = 'http://' + self.url
 
     def scrape_all(self):
-        website_data = multithread_scraper.scraper_data.PageData()
-        for website_data_funcs in self.scraper_functions:
-            data_piece = website_data_funcs()
-            type_of_data = data_piece[0]
-            data = data_piece[1]
-            website_data.add_data(type_of_data, data)
+        website_data = {}
+        try:
+            for website_data_funcs in self.scraper_functions:
+                data_piece = website_data_funcs()
+                type_of_data = data_piece[0]
+                data = data_piece[1]
+                website_data[type_of_data] = data
+        except common.exceptions.StaleElementReferenceException:
+            print('Stale element ')
+        except common.exceptions.NoSuchElementException:
+            print('Could not find element')
+        except common.exceptions.WebDriverException:
+            print('Unknown error')
+
 
         return website_data
 
@@ -73,16 +82,19 @@ class SearchScraper:
         for word in all_words:
             if re.fullmatch('^[a-zA-z]+', word) is not None:
                 key_words.append(word)
-        return 'Words', all_words
+        return 'Words', key_words
 
     def get_links(self):
         links = self.driver.find_elements_by_tag_name('a')
         link_list = []
-        for sub_domain in links:
-            if (sub_domain is not None):
-                link_list.append(sub_domain.get_attribute("href"))
 
-        return 'SubDomains', link_list
+        for sub_domain in links:
+            link = sub_domain.get_attribute("href")
+            if link is not None:
+                #Add validation to check if url is a subdomain
+                link_list.append(link)
+
+        return 'Subdomains', link_list
 
     def get_title(self):
         title = self.driver.title
