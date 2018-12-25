@@ -4,7 +4,7 @@ from threading import Lock
 
 class UrlList:
     _BUFFER_SIZE = 5000
-    mutex = Lock()
+    _mutex = Lock()
 
     def __init__(self, url_file_loc):
         self._buffer = queue.Queue(maxsize=UrlList._BUFFER_SIZE)
@@ -14,14 +14,14 @@ class UrlList:
         return self
 
     def __next__(self):
-        UrlList.mutex.acquire()
+        UrlList._mutex.acquire()
         try:
             if self._buffer.empty():
                 self._reload_buffer()
             new_url = self._buffer.get()
             return new_url
         finally:
-            UrlList.mutex.release()
+            UrlList._mutex.release()
 
     def _reload_buffer(self):
         for line in self._file:
@@ -34,9 +34,10 @@ class UrlList:
 
 
 class PageDataCollection:
-    _MAX_PAGE_DATA = 50
+    _MAX_PAGE_DATA = 20
     _NULL_WORD = "Not Found"
-    mutex = Lock()
+    _write_count = 0
+    _mutex = Lock()
 
     def __init__(self, write_file_loc):
         self._buffer = queue.Queue(maxsize=PageDataCollection._MAX_PAGE_DATA)
@@ -44,15 +45,16 @@ class PageDataCollection:
 
     def __del__(self):
         self._file.close()
+        print(PageDataCollection._write_count, 'urls written to file')
 
     def add_page(self, page_data: dict):
-        PageDataCollection.mutex.acquire()
+        PageDataCollection._mutex.acquire()
         try:
-            self._buffer.put(page_data)
             if self._buffer.full():
                 self.flush()
+            self._buffer.put(page_data)
         finally:
-            PageDataCollection.mutex.release()
+            PageDataCollection._mutex.release()
 
     def flush(self):
         while not self._buffer.empty():
@@ -67,3 +69,4 @@ class PageDataCollection:
                     self._file.write(" ")
                 self._file.write("\n")
             self._file.write('\n----------\n')
+            PageDataCollection._write_count += 1

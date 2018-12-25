@@ -6,3 +6,5 @@ venv/
 \.DS_Store
 
 scraper/__pycache__/
+
+multithread_scraper/__pycache__/

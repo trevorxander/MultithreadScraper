@@ -1,7 +1,4 @@
-from multithread_scraper import scraper_data
-
 import re
-import multithread_scraper.scraper_data
 from selenium import webdriver
 from selenium import common
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
@@ -32,35 +29,39 @@ class SearchScraper:
         chrom_options.Proxy = None
         capa = DesiredCapabilities.CHROME
         capa["pageLoadStrategy"] = "normal"
-        self.driver = webdriver.Chrome(driver_location, desired_capabilities=capa, chrome_options=chrom_options)
-        self.url = url
+        self._driver = webdriver.Chrome(driver_location, desired_capabilities=capa, chrome_options=chrom_options)
+        self._url = url
 
-        self.scraper_functions = [self.get_title,
-                                  self.get_url,
-                                  self.get_description,
-                                  self.get_keywords,
-                                  #self.get_category,
-                                  self.get_links]
+        self._scraper_functions = [self.get_title,
+                                   self.get_url,
+                                   self.get_description,
+                                   self.get_keywords,
+                                   # self.get_category,
+                                   self.get_links]
 
         self._open_page()
 
+    def quit(self):
+        self._driver.close()
+        self._driver.quit()
+
     def _open_page(self):
-        self.driver.implicitly_wait(10)
-        if self.url.startswith('http') or self.url.startswith('https'):
-            self.driver.get(self.url)
+        self._driver.implicitly_wait(5)
+        if self._url.startswith('http') or self._url.startswith('https'):
+            self._driver.get(self._url)
             return
         else:
             try:
-                self.driver.get('https://' + self.url)
-                self.url = 'https://' + self.url
+                self._driver.get('https://' + self._url)
+                self._url = 'https://' + self._url
             except:
-                self.__init__(self.driver, 'http://' + self.url)
-                self.url = 'http://' + self.url
+                self.__init__(self._driver, 'http://' + self._url)
+                self._url = 'http://' + self._url
 
     def scrape_all(self):
         website_data = {}
         try:
-            for website_data_funcs in self.scraper_functions:
+            for website_data_funcs in self._scraper_functions:
                 data_piece = website_data_funcs()
                 type_of_data = data_piece[0]
                 data = data_piece[1]
@@ -72,11 +73,10 @@ class SearchScraper:
         except common.exceptions.WebDriverException:
             print('Unknown error')
 
-
         return website_data
 
     def get_keywords(self):
-        all_words = self.driver.find_element_by_tag_name("html").text
+        all_words = self._driver.find_element_by_tag_name("html").text
         all_words = all_words.split()
         key_words = []
         for word in all_words:
@@ -85,28 +85,28 @@ class SearchScraper:
         return 'Words', key_words
 
     def get_links(self):
-        links = self.driver.find_elements_by_tag_name('a')
+        links = self._driver.find_elements_by_tag_name('a')
         link_list = []
 
         for sub_domain in links:
             link = sub_domain.get_attribute("href")
             if link is not None:
-                #Add validation to check if url is a subdomain
+                # Add validation to check if url is a subdomain
                 link_list.append(link)
 
         return 'Subdomains', link_list
 
     def get_title(self):
-        title = self.driver.title
+        title = self._driver.title
         return 'Title', [title]
 
     def get_category(self):
-        meta = self.driver.find_element_by_tag_name("meta")
+        meta = self._driver.find_element_by_tag_name("meta")
         return 'Category', [meta]
 
     def get_description(self):
-        getElem = [(self.driver.find_element_by_name, ('description')),
-                   (self.driver.find_element_by_name, ('Description'))]
+        getElem = [(self._driver.find_element_by_name, ('description')),
+                   (self._driver.find_element_by_name, ('Description'))]
 
         description = None
         for (func, param) in getElem:
@@ -122,4 +122,4 @@ class SearchScraper:
         return 'Description', [description]
 
     def get_url(self):
-        return 'URL', [self.url]
+        return 'URL', [self._url]

@@ -1,5 +1,6 @@
 from multithread_scraper import scraper_data
 from multithread_scraper import scraper
+
 import sys
 import time
 import threading
@@ -7,18 +8,17 @@ from threading import Lock
 
 
 class MultithreadScraper:
+    _MAX_URLS = int(sys.maxsize)
 
-    _MAX_URLS = int (sys.maxsize)
-    _DRIVER_LOC = '../drivers/chromedriver'
-    _INPUT_FILE = '../data/top_websites.txt'
-    _OUTPUT_FILE = '../data/page_data.txt'
-
-    def __init__(self, max_threads=5):
+    def __init__(self, max_threads=None,
+                 input=None,
+                 output=None,
+                 driver=None):
 
         scraping_threads = []
         start_time = time.time()
 
-        url_queue = scraper_data.UrlList(MultithreadScraper._INPUT_FILE)
+        url_queue = scraper_data.UrlList(input)
 
         max_active_thread = threading.active_count() + max_threads
         url_count: int
@@ -27,7 +27,7 @@ class MultithreadScraper:
                 break
             while threading.active_count() > max_active_thread:
                 time.sleep(0)
-            thread = ScraperThread(MultithreadScraper._DRIVER_LOC, url)
+            thread = ScraperThread(driver, url, output)
             thread.start()
             scraping_threads.append(thread)
 
@@ -37,7 +37,7 @@ class MultithreadScraper:
             except:
                 continue
 
-        ScraperThread.data_collection.flush()
+        ScraperThread.page_data_buffer.flush()
 
         end_time = time.time()
 
@@ -45,25 +45,27 @@ class MultithreadScraper:
 
 
 class ScraperThread(threading.Thread):
-    data_collection = scraper_data.PageDataCollection(MultithreadScraper._OUTPUT_FILE)
-    threadLock = Lock()
+    page_data_buffer: scraper_data.PageDataCollection
+    _first_call = True
+    _threadLock = Lock()
 
-    def __init__(self, driver_location, url):
+    def __init__(self, driver_location, url_to_scrape, out_file):
         threading.Thread.__init__(self)
         self.driver_loc = driver_location
-        self.url = url
-        self.data = {}
+        self.url = url_to_scrape
+
+        ScraperThread._threadLock.acquire()
+        try:
+            if ScraperThread._first_call:
+                ScraperThread.page_data_buffer = scraper_data.PageDataCollection(out_file)
+                ScraperThread._first_call = False
+        finally:
+            ScraperThread._threadLock.release()
 
     def run(self):
-        self.scraper = scraper.SearchScraper(self.driver_loc, self.url)
-
-        page_data = self.scraper.scrape_all()
+        search_scraper = scraper.SearchScraper(self.driver_loc, self.url)
+        page_data = search_scraper.scrape_all()
+        search_scraper.quit()
         sub_domains = page_data['Subdomains']
-
-        ScraperThread.threadLock.acquire()
-        try:
-            ScraperThread.data_collection.add_page(page_data)
-        finally:
-            ScraperThread.threadLock.release()
-
+        ScraperThread.page_data_buffer.add_page(page_data)
         return
