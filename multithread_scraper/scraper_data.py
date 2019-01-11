@@ -1,7 +1,6 @@
 import queue
 from threading import Lock
 
-
 class UrlList:
     _BUFFER_SIZE = 5000
     _mutex = Lock()
